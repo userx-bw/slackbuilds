@@ -1,0 +1,283 @@
+---
+ configure.ac                                         |    2 
+ plugins/collab/backends/service/xp/RealmProtocol.cpp |    4 
+ plugins/collab/backends/service/xp/soa_soup.cpp      |    2 
+ plugins/latex/xp/ie_exp_LaTeX.cpp                    |    2 
+ plugins/xslfo/xp/ie_exp_XSL-FO.cpp                   |    2 
+ src/af/xap/cocoa/xap_CocoaApp.cpp                    |    2 
+ src/af/xap/cocoa/xap_CocoaApp.h                      |    2 
+ src/af/xap/gtk/xap_UnixApp.cpp                       |  106 ++++++++-----------
+ src/af/xap/gtk/xap_UnixApp.h                         |    2 
+ src/af/xap/win/xap_Win32App.cpp                      |    2 
+ src/af/xap/win/xap_Win32App.h                        |    2 
+ src/af/xap/xp/xap_App.h                              |    2 
+ 12 files changed, 60 insertions(+), 70 deletions(-)
+
+Index: src/af/xap/cocoa/xap_CocoaApp.h
+===================================================================
+--- src/af/xap/cocoa/xap_CocoaApp.h.orig
++++ src/af/xap/cocoa/xap_CocoaApp.h
+@@ -65,7 +65,7 @@ public:
+ 	virtual void							copyToClipboard(PD_DocumentRange * pDocRange, bool bUseClipboard = true) = 0;
+ 	virtual void							pasteFromClipboard(PD_DocumentRange * pDocRange, bool bUseClipboard, bool bHonorFormatting = true) = 0;
+ 	virtual bool							canPasteFromClipboard() = 0;
+-	virtual const char *					getUserPrivateDirectory();
++	virtual const char *					getUserPrivateDirectory() const;
+ 	virtual bool							findAbiSuiteBundleFile(std::string & path, const char * filename, const char * subdir = 0); // checks only bundle
+ 	virtual bool							findAbiSuiteLibFile(std::string & path, const char * filename, const char * subdir = 0);
+ 	virtual bool							findAbiSuiteAppFile(std::string & path, const char * filename, const char * subdir = 0); // doesn't check user-dir
+Index: src/af/xap/cocoa/xap_CocoaApp.cpp
+===================================================================
+--- src/af/xap/cocoa/xap_CocoaApp.cpp.orig
++++ src/af/xap/cocoa/xap_CocoaApp.cpp
+@@ -196,7 +196,7 @@ void XAP_CocoaApp::getGeometry(int * x,
+ 	*flags = m_geometry.flags;
+ }
+ 
+-const char * XAP_CocoaApp::getUserPrivateDirectory()
++const char * XAP_CocoaApp::getUserPrivateDirectory() const
+ {
+ 	static const char * szAbiDir = "Library/Application Support/AbiSuite";
+ 	
+Index: src/af/xap/gtk/xap_UnixApp.h
+===================================================================
+--- src/af/xap/gtk/xap_UnixApp.h.orig
++++ src/af/xap/gtk/xap_UnixApp.h
+@@ -73,7 +73,7 @@ public:
+ 	virtual void							pasteFromClipboard(PD_DocumentRange * pDocRange, bool bUseClipboard, bool bHonorFormatting = true) = 0;
+ 	virtual bool							canPasteFromClipboard() = 0;
+ 	void									migrate(const char *oldName, const char *newName, const char *path) const;
+-	virtual const char *					getUserPrivateDirectory();
++	virtual const char *					getUserPrivateDirectory() const;
+ 
+ 	virtual void							setSelectionStatus(AV_View * pView) = 0;
+ 	virtual void							clearSelection() = 0;
+Index: src/af/xap/gtk/xap_UnixApp.cpp
+===================================================================
+--- src/af/xap/gtk/xap_UnixApp.cpp.orig
++++ src/af/xap/gtk/xap_UnixApp.cpp
+@@ -230,70 +230,60 @@ void XAP_UnixApp::getWinGeometry(int * x
+ }
+ 
+ // This should be removed at some time.
+-void XAP_UnixApp::migrate (const char *oldName, const char *newName, const char *path) const
++void XAP_UnixApp::migrate(const char *oldName,
++                          const char *newName, const char *path) const
+ {
+-	if (path && newName && oldName && (*oldName == '/'))
+-	{
+-		char *old = new char[strlen(path) - strlen(newName) + strlen(oldName)];
+-     
+-		if (old)
+-		{
+-			size_t len = strrchr(path, '/') - path;       
+-			strncpy(old, path, len);
+-			old[len] = 0;
+-			strcat(old, oldName);
+-
+-			if (g_access(old, F_OK) == 0) 
+-			{
+-				UT_WARNINGMSG(("Renaming: %s -> %s\n", old, path));
+-				g_rename(old, path);
+-			}
+-                     
+-			delete[] old;
+-		}         
+-	}
++    if (path && newName && oldName && (*oldName == '/')) {
++
++        const char* end = strrchr(path, '/');
++        if (!end) {
++            UT_WARNINGMSG(("invalid path '%s', '/' not found", path));
++            return;
++        }
++
++        std::string old(path, end);
++        old += oldName;
++
++        if (g_access(old.c_str(), F_OK) == 0) {
++            UT_WARNINGMSG(("Renaming: %s -> %s\n", old.c_str(), path));
++            g_rename(old.c_str(), path);
++        }
++    }
+ }
+- 
+-const char * XAP_UnixApp::getUserPrivateDirectory()
+-{
+-	/* return a pointer to a static buffer */
+-    static char *buf = NULL;
+ 
+-    if (buf == NULL)
+-    {
+-		const char * szAbiDir = "abiword";
+-		const char * szCfgDir = ".config";
+-
+-		const char * szXDG = getenv("XDG_CONFIG_HOME");
+-		if (!szXDG || !*szXDG) {
+-			const char * szHome = getenv("HOME");
+-			if (!szHome || !*szHome)
+-				szHome = "./";
+-
+-			buf = new char[strlen(szHome)+strlen(szCfgDir)+strlen(szAbiDir)+4];
+-
+-			strcpy(buf, szHome);
+-			if (buf[strlen(buf)-1] != '/')
+-				strcat(buf, "/");
+-			strcat(buf, szCfgDir);
+-		} else {
+-			buf = new char[strlen(szXDG)+strlen(szAbiDir)+4];
+-			strcpy(buf, szXDG);
+-		}
+-
+-		strcat(buf, "/");
+-		strcat(buf, szAbiDir);
+-
+-#ifdef PATH_MAX
+-        if (strlen(buf) >= PATH_MAX)
+-            DELETEPV(buf);
+-#endif
++const char * XAP_UnixApp::getUserPrivateDirectory() const
++{
++    /* return a pointer to a static buffer */
++    static std::string private_dir;
+ 
+-		// migration / legacy
+-		migrate("/AbiSuite", szAbiDir, buf); 
++    if (private_dir.empty()) {
++        const char * szAbiDir = "abiword";
++        const char * szCfgDir = ".config";
++
++        const char * szXDG = getenv("XDG_CONFIG_HOME");
++        if (!szXDG || !*szXDG) {
++            const char * szHome = getenv("HOME");
++            if (!szHome || !*szHome)
++                szHome = "./";
++
++            private_dir = szHome;
++            if (szHome[strlen(szHome)-1] != '/') {
++                private_dir.push_back('/');
++            }
++            private_dir += szCfgDir;
++        } else {
++            private_dir = szXDG;
++        }
++
++        private_dir += '/';
++        private_dir += szAbiDir;
++
++        // migration / legacy
++        // XXX shouldn't that be /.AbiSuite ?
++        migrate("/AbiSuite", szAbiDir, private_dir.c_str());
+     }
+ 
+-	return buf;
++    return private_dir.c_str();
+ }
+ 
+ 
+Index: src/af/xap/xp/xap_App.h
+===================================================================
+--- src/af/xap/xp/xap_App.h.orig
++++ src/af/xap/xp/xap_App.h
+@@ -178,7 +178,7 @@ public:
+ 
+ 	virtual const XAP_StringSet *			getStringSet() const = 0;
+ 	virtual void						migrate(const char *oldName, const char *newName, const char *path) const;
+-	virtual const char *				getUserPrivateDirectory() = 0;
++	virtual const char *				getUserPrivateDirectory() const = 0;
+ 	virtual const char *				getAbiSuiteLibDir() const;
+ 	virtual const char *				getAbiSuiteAppDir() const = 0;
+ 	virtual bool					findAbiSuiteLibFile(std::string & path, const char * filename, const char * subdir = 0);
+Index: src/af/xap/win/xap_Win32App.h
+===================================================================
+--- src/af/xap/win/xap_Win32App.h.orig
++++ src/af/xap/win/xap_Win32App.h
+@@ -65,7 +65,7 @@ public:
+ 	virtual void							pasteFromClipboard(PD_DocumentRange * pDocRange, bool, bool) = 0;
+ 	virtual bool							canPasteFromClipboard(void) = 0;
+ 	virtual void							cacheCurrentSelection(AV_View *) = 0;
+-	virtual const char *					getUserPrivateDirectory(void);
++	virtual const char *					getUserPrivateDirectory(void) const;
+ 
+ 	virtual HICON							getIcon(void) = 0;
+ 	virtual HICON							getSmallIcon(void) = 0;
+Index: src/af/xap/win/xap_Win32App.cpp
+===================================================================
+--- src/af/xap/win/xap_Win32App.cpp.orig
++++ src/af/xap/win/xap_Win32App.cpp
+@@ -238,7 +238,7 @@ static bool isWriteable(LPWSTR lpPath)
+ 	return result;
+ }
+ 
+-const char * XAP_Win32App::getUserPrivateDirectory(void)
++const char * XAP_Win32App::getUserPrivateDirectory(void) const
+ {
+ 	/* return a pointer to a static buffer */
+ 
+Index: configure.ac
+===================================================================
+--- configure.ac.orig
++++ configure.ac
+@@ -663,7 +663,7 @@ AC_LANG_POP
+ #
+ 
+ # We need libpng
+-for l in libpng libpng14 libpng12; do
++for l in libpng libpng16 libpng14 libpng12; do
+   AC_MSG_CHECKING(for $l)
+   if $PKG_CONFIG --exists $l ; then
+     AC_MSG_RESULT(yes)
+Index: plugins/xslfo/xp/ie_exp_XSL-FO.cpp
+===================================================================
+--- plugins/xslfo/xp/ie_exp_XSL-FO.cpp.orig
++++ plugins/xslfo/xp/ie_exp_XSL-FO.cpp
+@@ -1451,7 +1451,7 @@ void s_XSL_FO_Listener::_openSection(PT_
+ 	{ \
+ 		UT_UTF8String esc = szValue; \
+ 		esc.escapeXML(); \
+-		buf += " "x"=\""; \
++		buf += " " x"=\""; \
+ 		buf += esc.utf8_str(); \
+ 		buf += "\""; \
+ 	}
+Index: plugins/latex/xp/ie_exp_LaTeX.cpp
+===================================================================
+--- plugins/latex/xp/ie_exp_LaTeX.cpp.orig
++++ plugins/latex/xp/ie_exp_LaTeX.cpp
+@@ -1329,7 +1329,7 @@ void s_LaTeX_Listener::_outputData(const
+ 	m_pie->write(sBuf.c_str(),sBuf.size());
+ }
+ 
+-#define SUB(a,who) case a: subst = "\\(\\"who"\\)"; return true;
++#define SUB(a,who) case a: subst = "\\(\\" who"\\)"; return true;
+ #define SUBd(a,who) case a: subst = who; return true;
+ static bool _convertLettersToSymbols(char c, const char *& subst)
+ {
+Index: plugins/collab/backends/service/xp/soa_soup.cpp
+===================================================================
+--- plugins/collab/backends/service/xp/soa_soup.cpp.orig
++++ plugins/collab/backends/service/xp/soa_soup.cpp
+@@ -163,7 +163,7 @@ namespace soup_soa {
+ 	
+ 	static bool _invoke(const std::string& /*url*/, const soa::method_invocation& /*mi*/, SoaSoupSession& sess, std::string& result) {
+ 		if (!sess.m_session || !sess.m_msg )
+-			return soa::GenericPtr();
++			return false;
+ 
+ 		guint status = soup_session_send_message (sess.m_session, sess.m_msg);
+ 		if (!(SOUP_STATUS_IS_SUCCESSFUL (status) ||
+Index: plugins/collab/backends/service/xp/RealmProtocol.cpp
+===================================================================
+--- plugins/collab/backends/service/xp/RealmProtocol.cpp.orig
++++ plugins/collab/backends/service/xp/RealmProtocol.cpp
+@@ -6,8 +6,8 @@ namespace protocolv1 {
+ 
+ #define MAX_PACKET_DATA_SIZE 64*1024*1024
+ 		
+-#define RPV1_PACKET_NONEXISTENT -2
+-#define RPV1_PACKET_VARIABLE -1
++#define RPV1_PACKET_NONEXISTENT uint32_t(-2)
++#define RPV1_PACKET_VARIABLE uint32_t(-1)
+ 	
+ static uint32_t body_size[6] = {
+ 	RPV1_PACKET_NONEXISTENT, /* 0: reserved */
