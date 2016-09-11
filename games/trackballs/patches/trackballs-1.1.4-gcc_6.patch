@@ -1,0 +1,24 @@
+diff -Nur trackballs-1.1.4/src/glHelp.cc new/src/glHelp.cc
+--- trackballs-1.1.4/src/glHelp.cc	2007-04-07 15:15:09.000000000 +0200
++++ new/src/glHelp.cc	2016-07-31 19:45:38.103811307 +0200
+@@ -129,7 +129,7 @@
+   // why is this removed? should it not be done???
+   glDeleteTextures(1,&texture);  
+ }
+-inline Real abs(Real v) {return v>0.0?v:-v;}
++//inline Real abs(Real v) {return v>0.0?v:-v;}
+ double mousePointerPhase=0.0;
+ 
+ void tickMouse(Real td) {
+diff -Nur trackballs-1.1.4/src/menuMode.cc new/src/menuMode.cc
+--- trackballs-1.1.4/src/menuMode.cc	2007-04-07 15:16:26.000000000 +0200
++++ new/src/menuMode.cc	2016-07-31 20:05:55.800004530 +0200
+@@ -163,7 +163,7 @@
+   case MENU_EDITOR: GameMode::activate(EditMode::editMode); break;
+   }
+ }
+-inline Real abs(Real v) {return v>0.0?v:-v;}
++//inline Real abs(Real v) {return v>0.0?v:-v;}
+ 
+ void MenuMode::idle(Real td) {
+   int w,h,i,x,y;
