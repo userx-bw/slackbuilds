@@ -142,8 +142,8 @@ sed \
   -e "s/^\#ExitOnOOM/ExitOnOOM/" \
   -i etc/clamd.conf.sample
 
-CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
+CFLAGS="$SLKCFLAGS -std=gnu99" \
+CXXFLAGS="$SLKCFLAGS -std=gnu++98" \
 ./configure \
   --prefix=/usr \
   --libdir=/usr/lib${LIBDIRSUFFIX} \

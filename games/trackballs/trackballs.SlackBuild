@@ -58,6 +58,7 @@ find -L . \
 
 # Apply two patches from redhat: one to fix building and running with guile-2.0.x,
 # another to fix "Esc" behaviour
+# Also apply another one to build with gcc-6.x
 for i in $CWD/patches/* ; do patch -p1 < $i ; done
 
 # Make icons honor DESTDIR (thanks to Johannes for this fix)

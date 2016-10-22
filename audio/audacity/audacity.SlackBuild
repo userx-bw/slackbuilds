@@ -94,7 +94,7 @@ patch -p1 < $CWD/audacity-ffmpeg.patch
 # libsoxr is the new default resampling library
 LDFLAGS="-L/usr/lib$LIBDIRSUFFIX" \
 CFLAGS="$SLKCFLAGS" \
-CXXFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS -std=gnu++98" \
 ./configure \
   --prefix=/usr \
   --libdir=/usr/lib${LIBDIRSUFFIX} \
