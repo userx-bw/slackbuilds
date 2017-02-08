@@ -1,8 +1,12 @@
 PRGNAM="icecat"
 VERSION="45.5.1"
 HOMEPAGE="http://www.gnu.org/software/gnuzilla/"
-DOWNLOAD="https://ftp.gnu.org/gnu/gnuzilla/45.5.1/icecat-45.5.1-gnu1.tar.bz2"
-MD5SUM="1a0d24551a72c60e82ded717455c21fb"
+DOWNLOAD="https://ftp.gnu.org/gnu/gnuzilla/45.5.1/icecat-45.5.1-gnu1.tar.bz2 \
+          http://ponce.cc/slackware/sources/repo/autoconf-2.13.tar.xz \
+          http://ponce.cc/slackware/sources/repo/autoconf-2.13-consolidated_fixes-1.patch.gz"
+MD5SUM="1a0d24551a72c60e82ded717455c21fb \
+        f2994d302cf736e7e71974edfa51da3c \
+        d6cdb231911a8d0b08a25b8dd8c5935c"
 DOWNLOAD_x86_64=""
 MD5SUM_x86_64=""
 REQUIRES=""
